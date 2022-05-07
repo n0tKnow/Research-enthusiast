@@ -5,8 +5,8 @@ const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_i
 
 const _request = (url, method, data = null) => {
     const r = (resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function () {
+        const xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
             if (xhr.readyState === 4) {
                 const ret = {
                     body: xhr.responseText,
@@ -14,9 +14,9 @@ const _request = (url, method, data = null) => {
                 }
                 xhr.status === 200 || xhr.status === 302 ? resolve(ret) : reject(ret)
             }
-        };
-        xhr.open(method, url);
-        xhr.send(data);
+        }
+        xhr.open(method, url)
+        xhr.send(data)
     }
 
     return new Promise(r)
