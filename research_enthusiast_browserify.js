@@ -28,14 +28,18 @@ const post = (url, data = null) => _request(url, "POST", data)
 
 const getTimestampMs = date => Date.parse(`${date || user.date} 00:00:00`)
 
-const getTimestamp = () => getTimestampMs() / 1000
+const getTimestamp = date => getTimestampMs(date) / 1000
 
-const getQueryUrl = date => queryUrl + getTimestamp()
+const getQueryUrl = date => queryUrl + getTimestamp(date)
 
 const getHtml = async date => {
-    const {body, code} = await get(getQueryUrl());
-    if (code !== 200) throw "get html error code:" + code + body
-    return body
+    try {
+        const {body} = await get(getQueryUrl(date));
+        return body
+    } catch (e) {
+        console.log("get html failed")
+        throw e
+    }
 }
 
 const domFromNetWork = async () => {
@@ -44,6 +48,7 @@ const domFromNetWork = async () => {
 }
 
 const parseNodes = async () => {
+    console.log("parsing data ...")
     const _document = await domFromNetWork()
     const formDl = getFormData(_document)
     const labelNodes = _document.querySelector("#frm > div.box > div > table:nth-child(1) > tbody > tr")
@@ -74,7 +79,7 @@ const _choose = (options, target) => {
     const r = user.durations.map(d => tList.find(t => t.value.endsWith(d)))
     const res = r.filter(r => r).map(c => [c.name, c.value])
     if (!res || res.length !== user.durations.length) {
-        console.log(`expect length ${user.targets.length}, ${res?.length} got`)
+        console.log(`expect length ${user.targets.length}, ${res?.length} got, ${target} ignore`)
         return null
     }
     return res
@@ -83,15 +88,22 @@ const _choose = (options, target) => {
 const choose = options => user.targets.map(t => _choose(options, t)).filter(r => r)
 
 const order = async payload => {
+    const start = new Date()
     const {body, code} = await post(postUrl, payload)
     if (code === 200 && body.includes("预约成功")) {
-        console.log("Done! ")
-        const page = new DOMParser().parseFromString(body, "text/html")
-        console.log("Info: ", page.querySelector("div > br").parentElement.textContent)
+        onSuccess(start, body)
         return true
     }
     console.log("failed ", code, body)
     return false
+}
+
+const onSuccess = (start, text) => {
+    const now = new Date()
+    const cost = now.getTime() - start
+    console.log(`Done! order time: ${start.toLocaleString()} - ${now.toLocaleString()}, cost ${Math.floor(cost / 1000)}s ${cost % 1000}ms`)
+    const page = new DOMParser().parseFromString(text, "text/html")
+    console.log("Order info: ", page.querySelector("div > br").parentElement.textContent)
 }
 
 const waitUntilStartTime = date => {
@@ -102,19 +114,25 @@ const waitUntilStartTime = date => {
 const waitUntil = async timestamp => {
     let remain = timestamp - Date.now()
     if (remain <= 0) return
+    console.log(`call function stopTimer to cancel`)
     while (remain > 0) {
-        console.log(`countdown ${Math.floor(remain / 1000 / 3600)}h ${Math.floor(remain / 1000 % 3600 / 60)}m ${Math.floor(remain / 1000 % 60)} s`)
         if (user.stop) {
             user.stop = false
-            throw "wait canceled"
+            throw "user canceled"
         }
-        await sleep(Math.min(remain, 5000))
+        console.log(`countdown ${Math.floor(remain / 1000 / 3600)}h ${Math.floor(remain / 1000 % 3600 / 60)}m ${Math.floor(remain / 1000 % 60)} s`)
+        await sleep(getSleepTime(remain))
         remain = timestamp - Date.now()
     }
-    console.log("time confirmed")
 }
 
-const stopCountdown = () => {
+const getSleepTime = remain => {
+    const second = 1000
+    const minute = 60 * second
+    return remain > minute ? minute : remain > 30 * second ? 30 * second : remain > 10 * second ? 10 * second : remain + (second / 10)
+}
+
+const stopTimer = () => {
     user.stop = true
 }
 
@@ -144,19 +162,20 @@ const normalizeCreatedTime = t => {
 const run = async () => {
     const {formDl, options} = await parseNodes()
     const candidates = choose(options)
-    //console.log(formDl, c)
     for (const c of candidates) {
         const payload = buildFormByList(formDl.concat(c))
         await waitUntilStartTime()
         const result = await order(payload)
         if (result) return 0
     }
-    throw "no one success"
+    throw "all tasks failed"
 }
 
 const configUser = config => {
     validConfig(config)
-    Object.entries(config).forEach(([k, v]) => {user[k] = v})
+    Object.entries(config).forEach(([k, v]) => {
+        user[k] = v
+    })
 }
 
 const validConfig = config => {
@@ -178,8 +197,10 @@ const _valid = config => {
     if (!Array.isArray(config.durations)) throw "config.durations must be array with duration start time"
 }
 
+const VERSION = "🔬Research enthusiast v1.0.0"
+
 const usage = () => {
-    const msg = '//🔬Research enthusiast v1.0.0 usage:\n' +
+    const msg = `//${VERSION} usage:\n` +
         'const config = {\n' +
         '    date: "2022-05-07",\n' +
         '    targets: ["细胞室一 3号超净工作台", "细胞室一 1号超净工作台", "细胞一室 2号超净工作台"],\n' +
@@ -194,6 +215,6 @@ const runWithConfig = config => {
     return run()
 }
 
-const onload = ()=> console.log("🔬Research enthusiast v1.0.0")
+const onload = () => console.log(VERSION)
 
 onload()
