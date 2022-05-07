@@ -1,5 +1,6 @@
 const user = {}
 const day = 60 * 60 * 24
+const VERSION = "🔬Research enthusiast v1.0.0"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
 const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
 
@@ -18,7 +19,6 @@ const _request = (url, method, data = null) => {
         xhr.open(method, url)
         xhr.send(data)
     }
-
     return new Promise(r)
 }
 
@@ -70,7 +70,6 @@ const parseNodes = async () => {
             options[key].push(o)
         })
     )
-
     return {formDl, options}
 }
 
@@ -196,8 +195,6 @@ const _valid = config => {
     if (!Array.isArray(config.targets)) throw "config.targets must be array"
     if (!Array.isArray(config.durations)) throw "config.durations must be array with duration start time"
 }
-
-const VERSION = "🔬Research enthusiast v1.0.0"
 
 const usage = () => {
     const msg = `//${VERSION} usage:\n` +
