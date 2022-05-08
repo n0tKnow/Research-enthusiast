@@ -159,6 +159,7 @@ const normalizeCreatedTime = t => {
 }
 
 const run = async () => {
+    tip(user)
     const {formDl, options} = await parseNodes()
     const candidates = choose(options)
     for (const c of candidates) {
@@ -237,9 +238,7 @@ const usage = () => {
     console.log(msg)
 }
 
-const logTask = u => {
-    console.log(`${Array.isArray(u.targets) ? u.targets.join(" || ") : u.targets} -> ${u.durations}`)
-}
+const tip = u => console.log(`${Array.isArray(u.targets) ? u.targets.join(" || ") : u.targets} -> ${u.durations}`)
 
 const runWithConfig = config => {
     configUser(config)
