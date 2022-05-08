@@ -171,10 +171,39 @@ const run = async () => {
 }
 
 const configUser = config => {
+    formatConfig(config)
     validConfig(config)
     Object.entries(config).forEach(([k, v]) => {
         user[k] = v
     })
+}
+
+const str2sequence = d => {
+    console.assert(d.includes("-"))
+    const [start, end] = d.split("-")
+    console.assert(start.includes(":") && end.includes(":"))
+    const [startHour, startMin] = start.split(":").map(n => parseInt(n.trim()))
+    const [endHour, endMin] = end.split(":").map(n => parseInt(n))
+    console.assert(endHour >= startHour && startHour >= 7 && endHour <= 22)
+    const durations = []
+    for (let i = startHour; i < endHour; i++) {
+        (i !== startHour || startMin !== 30) && durations.push(`${i}:00`)
+        durations.push(`${i}:30`)
+    }
+    endMin === 30 && durations.push(`${endHour}:00`)
+    return durations
+}
+
+const formatConfig = config => {
+    if (typeof (config.targets) === "string") {
+        config.targets = [config.targets]
+    }
+
+    if (typeof (config.durations) === "string") {
+        config.durations = str2sequence(config.durations)
+    } else if (Array.isArray(config.durations) && config.durations.length === 1 && config.durations[0].includes("-")) {
+        config.durations = str2sequence(config.durations[0])
+    }
 }
 
 const validConfig = config => {
@@ -196,15 +225,20 @@ const _valid = config => {
     if (!Array.isArray(config.durations)) throw "config.durations must be array with duration start time"
 }
 
+
 const usage = () => {
     const msg = `//${VERSION} usage:\n` +
         'const config = {\n' +
-        '    date: "2022-05-07",\n' +
-        '    targets: ["细胞室一 3号超净工作台", "细胞室一 1号超净工作台", "细胞一室 2号超净工作台"],\n' +
-        '    durations: ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30"],\n' +
-        '}\n' +
+        '    date: "2022-05-09",\n' +
+        '    targets: "细胞室一 生物安全柜",\n' +
+        '    durations: "15:00-20:00",\n' +
+        '}' +
         'runWithConfig(config).then(r => console.log("exit with code " + r))'
     console.log(msg)
+}
+
+const logTask = u => {
+    console.log(`${Array.isArray(u.targets) ? u.targets.join(" || ") : u.targets} -> ${u.durations}`)
 }
 
 const runWithConfig = config => {
