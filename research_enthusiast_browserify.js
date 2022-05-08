@@ -55,7 +55,6 @@ const parseNodes = async () => {
     const labels = [...labelNodes.getElementsByTagName("td")].map(n => n.textContent.trim())
     const inputNodes = _document.querySelector("#frm > div.box > div > table:nth-child(2) > tbody > tr")
     const tds = [...inputNodes.getElementsByTagName("td")]
-    //const times = tds[0].getElementsByTagName("div").map(div => div.textContent.trim())
     const options = {}
     tds.forEach((td, index) =>
         [...td.getElementsByTagName("input")].forEach(i => {
@@ -87,6 +86,7 @@ const _choose = (options, target) => {
 const choose = options => user.targets.map(t => _choose(options, t)).filter(r => r)
 
 const order = async payload => {
+    console.log("ordering ...")
     const start = new Date()
     const {body, code} = await post(postUrl, payload)
     if (code === 200 && body.includes("预约成功")) {
@@ -233,7 +233,7 @@ const usage = () => {
         '    date: "2022-05-09",\n' +
         '    targets: "细胞室一 生物安全柜",\n' +
         '    durations: "15:00-20:00",\n' +
-        '}' +
+        '}\n' +
         'runWithConfig(config).then(r => console.log("exit with code " + r))'
     console.log(msg)
 }
