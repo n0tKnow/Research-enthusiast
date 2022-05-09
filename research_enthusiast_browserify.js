@@ -2,7 +2,7 @@ const user = {}
 const day = 60 * 60 * 24
 const VERSION = "🔬Research enthusiast v1.0.0"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
-const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=&day=`
+const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
 
 const _request = (url, method, data = null) => {
     const r = (resolve, reject) => {
@@ -106,6 +106,9 @@ const onSuccess = (start, text) => {
     const now = new Date()
     const cost = now.getTime() - start
     console.log(`Done! order time: ${start.toLocaleString()} - ${now.toLocaleString()}, cost ${Math.floor(cost / 1000)}s ${cost % 1000}ms`)
+    if (user.running) {
+        return self?.postMessage(text)
+    }
     const page = new DOMParser().parseFromString(text, "text/html")
     console.log("Order info: ", page.querySelector("div > br").parentElement.textContent)
 }
@@ -126,7 +129,9 @@ const waitUntil = async timestamp => {
             throw "user canceled"
         }
         const st = getSleepTime(remain)
-        console.log(`countdown ${Math.floor(remain / 1000 / 3600)}h ${Math.floor(remain / 1000 % 3600 / 60)}m ${Math.floor(remain / 1000 % 60)} s  - ${Math.floor(st / 1000)} s, ${new Date()}`)
+        const h = Math.floor(remain / 1000 / 3600), m = Math.floor(remain / 1000 % 3600 / 60),
+            s = Math.floor(remain / 1000 % 60)
+        console.log("countdown ", h, "h ", m, "m ", s, " s  - ", Math.floor(st / 1000), " s ", new Date())
         await sleep(st)
         remain = timestamp - Date.now()
     }
@@ -140,6 +145,7 @@ const getSleepTime = remain => {
 
 const stopTimer = () => {
     user.stop = true
+    stopWorkerTimer()
 }
 
 const getFormData = dom => [...Array(7).keys()].map(i => {
@@ -250,6 +256,178 @@ const tip = u => console.log(`${user.date} ${Array.isArray(u.targets) ? u.target
 const runWithConfig = config => {
     configUser(config)
     return run()
+}
+
+const stopWorkerTimer = () => {
+    user?.worker?.postMessage("stop")
+    user?.worker?.terminate()
+    user?.worker && console.log("worker terminated")
+    user.worker = undefined
+}
+
+const createWorker = () => {
+    const b = new Blob([`${workerText}`])
+    const wk = new Worker(window.URL.createObjectURL(b))
+    wk.onmessage = ({data}) => {
+        if (data === "terminate") {
+            return stopWorkerTimer()
+        }
+        else {
+            try {
+                const page = new DOMParser().parseFromString(data, "text/html")
+                console.log("Order info: ", page.querySelector("div > br").parentElement.textContent)
+            }catch (e) {
+                console.log("unknown message", e, data)
+            }
+
+        }
+    }
+    return wk
+}
+
+
+const runOnWorker = async () => {
+    tip(user)
+    const {formDl, options} = await parseNodes()
+    const candidates = choose(options).map(c => [...buildFormByList(formDl.concat(c)).entries()])
+    stopWorkerTimer()
+    const wk = createWorker()
+    user.worker = wk
+    wk.postMessage(JSON.stringify({candidates, user}))
+}
+
+const workerText = `
+const runOrder = async candidates => {
+    await waitUntilStartTime()
+    for (const c of candidates) {
+        const result = await order(c)
+        if (result) return 0
+    }
+    throw "all tasks failed"
+}
+
+const order = async payload => {
+    const start = new Date()
+    console.log("ordering ... ", start)
+    const {body, code} = await post(postUrl, payload)
+    if (code === 200 && body.includes("预约成功")) {
+        onSuccess(start, body)
+        return true
+    }
+    console.log("failed ", code, body, new Date())
+    return false
+}
+
+const onSuccess = (start, text) => {
+    const now = new Date()
+    const cost = now.getTime() - start
+    console.log("Done! order time: ", start.toLocaleString(), "-", now.toLocaleString(), " cost ", Math.floor(cost / 1000), "s ", cost % 1000, "ms")
+    if (user.running) {
+        return self?.postMessage(text)
+    }
+    const page = new DOMParser().parseFromString(text, "text/html")
+    console.log("Order info: ", page.querySelector("div > br").parentElement.textContent)
+}
+
+const decode = ars => ars.map(ar => {
+    const d = new FormData()
+    ar.forEach(a => d.append(...a))
+    return d
+})
+
+onmessage = ({data}) => {
+    try {
+        data = JSON.parse(data)
+    }catch (e) {}
+
+    if (data?.candidates) {
+        if (user.running) {
+            console.log("wait stop ...")
+            return stopTimer()
+        }
+        if (!data.user) {
+            return console.log("no user post")
+        }
+
+        Object.entries(data.user).forEach(([k, v]) => {
+            user[k] = v
+        })
+        user.running = true
+        runOrder(decode(data.candidates)).then(r => {
+            console.log("exit with code " + r)
+            user.running = false
+            self?.postMessage("terminate")
+        })
+    } else if (data === "stop") {
+        return stopTimer()
+    } else {
+        console.log("unknown message type:", data)
+    }
+}
+
+const waitUntilStartTime = date => {
+    const ms = getTimestampMs(date)
+    return waitUntil(ms - (day * 1000))
+}
+
+const waitUntil = async timestamp => {
+    let remain = timestamp - Date.now()
+    if (remain <= 0) return
+    console.log("call function stopTimer to cancel")
+    while (remain > 0) {
+        if (user.stop) {
+            user.stop = false
+            user.running = false
+            throw "user canceled"
+        }
+        const st = getSleepTime(remain)
+        const h = Math.floor(remain / 1000 / 3600), m = Math.floor(remain / 1000 % 3600 / 60),
+            s = Math.floor(remain / 1000 % 60)
+        console.log("countdown ", h,"h ", m, "m ", s, "s  - ", Math.floor(st / 1000), "s ", new Date())
+        await sleep(st)
+        remain = timestamp - Date.now()
+    }
+}
+
+const getSleepTime = remain => {
+    const second = 1000
+    const minute = 60 * second
+    return remain > (minute + 25 * second) ? minute : Math.min(5 * second, remain)
+}
+
+const day = 60 * 60 * 24
+
+const getTimestampMs = date => Date.parse((date || user.date) +" 00:00:00")
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const _request = (url, method, data = null) => {
+    const r = (resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) {
+                const ret = {
+                    body: xhr.responseText,
+                    code: xhr.status,
+                }
+                xhr.status === 200 || xhr.status === 302 ? resolve(ret) : reject(ret)
+            }
+        }
+        xhr.open(method, url)
+        xhr.send(data)
+    }
+    return new Promise(r)
+}
+
+const post = (url, data = null) => _request(url, "POST", data)
+
+const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
+
+const user = {}`
+
+const runWithConfigOnWorker = config => {
+    configUser(config)
+    return runOnWorker()
 }
 
 const onload = () => console.log(VERSION)
