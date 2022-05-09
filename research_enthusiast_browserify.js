@@ -2,7 +2,7 @@ const user = {}
 const day = 60 * 60 * 24
 const VERSION = "🔬Research enthusiast v1.0.0"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
-const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
+const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=&day=`
 
 const _request = (url, method, data = null) => {
     const r = (resolve, reject) => {
@@ -69,15 +69,20 @@ const parseNodes = async () => {
             options[key].push(o)
         })
     )
+    user.labels = labels
     return {formDl, options}
 }
 
 const _choose = (options, target) => {
+    if (!user.labels) throw "labels not found"
+    if (!user.labels.includes(target)) throw `invalid label ${target}, choose from ${user.labels}`
+
     const tList = options[target] || []
     const r = user.durations.map(d => tList.find(t => t.value.endsWith(d)))
     const res = r.filter(r => r).map(c => [c.name, c.value])
     if (!res || res.length !== user.durations.length) {
         console.log(`expect length ${user.targets.length}, ${res?.length} got, ${target} ignore`)
+        console.log(options)
         return null
     }
     return res
@@ -86,14 +91,14 @@ const _choose = (options, target) => {
 const choose = options => user.targets.map(t => _choose(options, t)).filter(r => r)
 
 const order = async payload => {
-    console.log("ordering ...")
     const start = new Date()
+    console.log(`ordering ... ${start}`)
     const {body, code} = await post(postUrl, payload)
     if (code === 200 && body.includes("预约成功")) {
         onSuccess(start, body)
         return true
     }
-    console.log("failed ", code, body)
+    console.log("failed ", code, body, new Date())
     return false
 }
 
@@ -117,10 +122,12 @@ const waitUntil = async timestamp => {
     while (remain > 0) {
         if (user.stop) {
             user.stop = false
+            user.running = false
             throw "user canceled"
         }
-        console.log(`countdown ${Math.floor(remain / 1000 / 3600)}h ${Math.floor(remain / 1000 % 3600 / 60)}m ${Math.floor(remain / 1000 % 60)} s`)
-        await sleep(getSleepTime(remain))
+        const st = getSleepTime(remain)
+        console.log(`countdown ${Math.floor(remain / 1000 / 3600)}h ${Math.floor(remain / 1000 % 3600 / 60)}m ${Math.floor(remain / 1000 % 60)} s  - ${Math.floor(st / 1000)} s, ${new Date()}`)
+        await sleep(st)
         remain = timestamp - Date.now()
     }
 }
@@ -128,7 +135,7 @@ const waitUntil = async timestamp => {
 const getSleepTime = remain => {
     const second = 1000
     const minute = 60 * second
-    return remain > minute ? minute : remain > 30 * second ? 30 * second : remain > 10 * second ? 10 * second : remain + (second / 10)
+    return remain > (minute + 25 * second) ? minute : Math.min(5 * second, remain)
 }
 
 const stopTimer = () => {
@@ -238,7 +245,7 @@ const usage = () => {
     console.log(msg)
 }
 
-const tip = u => console.log(`${Array.isArray(u.targets) ? u.targets.join(" || ") : u.targets} -> ${u.durations}`)
+const tip = u => console.log(`${user.date} ${Array.isArray(u.targets) ? u.targets.join(" || ") : u.targets} -> ${u.durations}`)
 
 const runWithConfig = config => {
     configUser(config)
