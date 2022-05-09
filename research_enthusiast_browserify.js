@@ -140,7 +140,8 @@ const waitUntil = async timestamp => {
 const getSleepTime = remain => {
     const second = 1000
     const minute = 60 * second
-    return remain > (minute + 25 * second) ? minute : Math.min(5 * second, remain)
+    const minWait = 5 * second
+    return remain > (minute + 25 * second) ? minute : remain > minWait ? minWait : (remain + second / 10)
 }
 
 const stopTimer = () => {
@@ -271,12 +272,11 @@ const createWorker = () => {
     wk.onmessage = ({data}) => {
         if (data === "terminate") {
             return stopWorkerTimer()
-        }
-        else {
+        } else {
             try {
                 const page = new DOMParser().parseFromString(data, "text/html")
                 console.log("Order info: ", page.querySelector("div > br").parentElement.textContent)
-            }catch (e) {
+            } catch (e) {
                 console.log("unknown message", e, data)
             }
 
@@ -392,7 +392,8 @@ const waitUntil = async timestamp => {
 const getSleepTime = remain => {
     const second = 1000
     const minute = 60 * second
-    return remain > (minute + 25 * second) ? minute : Math.min(5 * second, remain)
+    const minWait = 5 * second
+    return remain > (minute + 25 * second) ? minute : remain > minWait ? minWait : (remain + second / 10)
 }
 
 const day = 60 * 60 * 24
