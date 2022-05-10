@@ -1,6 +1,6 @@
 const user = {}
 const day = 60 * 60 * 24
-const VERSION = "🔬Research enthusiast v1.0.0"
+const VERSION = "🔬Research enthusiast v1.0.1"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
 const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
 
@@ -271,6 +271,7 @@ const createWorker = () => {
     const wk = new Worker(window.URL.createObjectURL(b))
     wk.onmessage = ({data}) => {
         if (data === "terminate") {
+            console.log("exit with code 0")
             return stopWorkerTimer()
         } else {
             try {
@@ -354,7 +355,6 @@ onmessage = ({data}) => {
         })
         user.running = true
         runOrder(decode(data.candidates)).then(r => {
-            console.log("exit with code " + r)
             user.running = false
             self?.postMessage("terminate")
         })
