@@ -1,6 +1,8 @@
 const user = {}
 const day = 60 * 60 * 24
-const VERSION = "🔬Research enthusiast v1.0.1"
+const VERSION = "🔬Research enthusiast v1.2.0"
+const host = "https://www.sekahui.com"
+const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
 const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
 
@@ -430,6 +432,65 @@ const runWithConfigOnWorker = config => {
     configUser(config)
     return runOnWorker()
 }
+
+const modifyOrder = async cfg => {
+    formatConfig(cfg)
+    const currentOrder = await findOrderByConfig(cfg)
+    configUser(cfg)
+    tip(user)
+    user.date = getAvailableDay()
+    const {formDl, options} = await parseNodes()
+    const [candidate] = choose(options).filter(r => r)
+    if (!candidate) throw `build form error,user ${user}`
+    user.date = cfg.date
+    const payload = buildFormByList(formDl.concat(candidate))
+    payload.set("create_time", `${Math.floor(Date.now() / 1000)}`)
+    payload.set("yuding_ri", getTimestamp(cfg.date).toString())
+    await waitUntilStartTime(cfg.date)
+    await cancelOrder(currentOrder)
+    await sleep(500)
+    return await order(payload)
+}
+
+const getAvailableDay = () => {
+    const d = new Date(Date.now() + 2 * day * 1000)
+    d.setHours(0, 0, 0, 0)
+    return d.toLocaleDateString()
+}
+
+const getOrders = async () => {
+    const {body} = await get(ordersLink)
+    const doc = new DOMParser().parseFromString(body, "text/html")
+    return [...doc.querySelectorAll("table")].map(parseOrder).filter(r => r)
+}
+
+const parseOrder = table => {
+    const texts = table.parentElement.parentElement.textContent.trim().split("\n").filter(r => r.trim()).map(r => r.trim())
+    const date = /预约日期：(\d{2})月(\d{2})日/gm.exec(texts[1] || "");
+    if (!date) return null
+    const {"1": month, "2": day} = date
+    const regex = /(\d{1,2}:\d{2})-/gm;
+    const order = {durations: []}
+    for (const t of texts[2].matchAll(regex)) {
+        order.durations.push(t["1"])
+    }
+    order.date = `${new Date().getFullYear()}-${month}-${day}`
+    order.targets = texts.slice(0, 1)
+    order.link = table.querySelector("a").getAttribute("href")
+    return order
+}
+
+const findOrderByConfig = async cfg => {
+    const orders = await getOrders()
+    const order = orders.find(order => order.targets.join() === cfg.targets.join() && order.date === cfg.date)
+    if (order) {
+        if (!cfg.durations.sort().join().startsWith(order.durations.sort().join())) throw `${cfg.durations} not found in ${order.durations}`
+        return order
+    }
+    throw `cfg not found in orders ${orders}`
+}
+
+const cancelOrder = order => get(`${host}${order.link}`)
 
 const onload = () => console.log(VERSION)
 
