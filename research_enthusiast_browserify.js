@@ -1,6 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
-const VERSION = "🔬Research enthusiast v1.2.0"
+const ProjectName = "🔬Research enthusiast"
+const Version = "v1.2.1"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -244,7 +245,7 @@ const _valid = config => {
 
 
 const usage = () => {
-    const msg = `//${VERSION} usage:\n` +
+    const msg = `//${ProjectName} ${Version} usage:\n` +
         'const config = {\n' +
         '    date: "2022-05-09",\n' +
         '    targets: "细胞室一 生物安全柜",\n' +
@@ -492,6 +493,10 @@ const findOrderByConfig = async cfg => {
 
 const cancelOrder = order => get(`${host}${order.link}`)
 
-const onload = () => console.log(VERSION)
+const onload = () => console.log(
+    `%c ${ProjectName} %c ${Version} `,
+    'padding: 2px 1px; border-radius: 3px 0 0 3px; color: #fff; background: #FF6132; font-weight: bold;',
+    'padding: 2px 1px; border-radius: 0 3px 3px 0; color: #fff; background: #42c02e; font-weight: bold;',
+);
 
 onload()
