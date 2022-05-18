@@ -485,7 +485,7 @@ const findOrderByConfig = async cfg => {
     const orders = await getOrders()
     const order = orders.find(order => order.targets.join() === cfg.targets.join() && order.date === cfg.date)
     if (order) {
-        if (!cfg.durations.sort().join().startsWith(order.durations.sort().join())) throw `${cfg.durations} not found in ${order.durations}`
+        if (!order.durations.sort().join().includes(cfg.durations.sort().join())) throw `${cfg.durations} not found in ${order.durations}`
         return order
     }
     throw `cfg not found in orders ${orders}`
@@ -493,10 +493,6 @@ const findOrderByConfig = async cfg => {
 
 const cancelOrder = order => get(`${host}${order.link}`)
 
-const onload = () => console.log(
-    `%c ${ProjectName} %c ${Version} `,
-    'padding: 2px 1px; border-radius: 3px 0 0 3px; color: #fff; background: #FF6132; font-weight: bold;',
-    'padding: 2px 1px; border-radius: 0 3px 3px 0; color: #fff; background: #42c02e; font-weight: bold;',
-);
+const onload = () => console.log(`${ProjectName} ${Version}`);
 
 onload()
