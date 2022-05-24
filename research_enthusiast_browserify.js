@@ -1,11 +1,11 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.2.2"
+const Version = "v1.2.3"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
-const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei=%E7%BB%86%E8%83%9E%E5%9F%B9%E5%85%BB%E5%B9%B3%E5%8F%B0&day=`
+const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&day=`
 
 const _request = (url, method, data = null) => {
     const r = (resolve, reject) => {
@@ -493,6 +493,10 @@ const findOrderByConfig = async cfg => {
 
 const cancelOrder = order => get(`${host}${order.link}`)
 
-const onload = () => console.log(`${ProjectName} ${Version}`);
+const onload = () => console.log(
+    `%c ${ProjectName} %c ${Version} `,
+    'padding: 2px 1px; border-radius: 3px 0 0 3px; color: #fff; background: #FF6132; font-weight: bold;',
+    'padding: 2px 1px; border-radius: 0 3px 3px 0; color: #fff; background: #42c02e; font-weight: bold;',
+);
 
 onload()
