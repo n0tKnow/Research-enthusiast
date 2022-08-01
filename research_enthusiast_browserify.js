@@ -84,9 +84,9 @@ const _choose = (options, target) => {
     const r = user.durations.map(d => tList.find(t => t.value.endsWith(d)))
     const res = r.filter(r => r).map(c => [c.name, c.value])
     if (!res || res.length !== user.durations.length) {
-        console.log(`expect length ${user.targets.length}, ${res?.length} got, ${target} ignore`)
+        console.log(`expect length ${user.durations.length}, ${res?.length} got, ${target} ignore`)
         console.log(options)
-        return null
+        throw `${target} ${user?.durations?.join(",")} has been occupied or suspended`
     }
     return res
 }
@@ -294,6 +294,9 @@ const runOnWorker = async () => {
     tip(user)
     const {formDl, options} = await parseNodes()
     const candidates = choose(options).map(c => [...buildFormByList(formDl.concat(c)).entries()])
+    if (!candidates?.length){
+        throw "config error,no plan found"
+    }
     stopWorkerTimer()
     const wk = createWorker()
     user.worker = wk
