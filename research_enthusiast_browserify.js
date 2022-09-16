@@ -1,7 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.3.0"
+const Version = "v1.3.1"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -172,7 +172,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const normalizeCreatedTime = t => {
     const remain = getTimestamp() - day - parseInt(t)
-    return remain >= 0 ? (getTimestamp() - day + 1).toString() : t
+    return remain >= 0 ? (getTimestamp() - day + getRndInteger(1,2)).toString() : t
+}
+
+function getRndInteger(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) ) + min;
 }
 
 const run = async () => {
