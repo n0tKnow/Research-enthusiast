@@ -1,7 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.2.3"
+const Version = "v1.3.0"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -172,7 +172,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const normalizeCreatedTime = t => {
     const remain = getTimestamp() - day - parseInt(t)
-    return remain >= 0 ? (getTimestamp() + 1).toString() : t
+    return remain >= 0 ? (getTimestamp() - day + 1).toString() : t
 }
 
 const run = async () => {
@@ -501,5 +501,7 @@ const onload = () => console.log(
     'padding: 2px 1px; border-radius: 3px 0 0 3px; color: #fff; background: #FF6132; font-weight: bold;',
     'padding: 2px 1px; border-radius: 0 3px 3px 0; color: #fff; background: #42c02e; font-weight: bold;',
 );
+
+const feature = () => console.log("1. fix created time")
 
 onload()
