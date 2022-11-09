@@ -173,7 +173,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const normalizeCreatedTime = t => {
     const remain = getTimestamp() - day - parseInt(t)
-    return remain >= 0 ? `${getTimestamp() - day}` : t
+    return remain >= 0 ? `${getTimestamp() - day + getRndInteger(0,2)}` : t
 }
 
 function getRndInteger(min, max) {
@@ -187,7 +187,7 @@ const run = async () => {
     for (const c of candidates) {
         const payload = buildFormByList(formDl.concat(c))
         await waitUntilStartTime()
-        await sleep(Math.floor(Math.random() * 2000) + 1)
+        await sleep(Math.floor(Math.random() * 500) + 1)
         const result = await order(payload)
         if (result) return 0
     }
@@ -312,7 +312,7 @@ const runOnWorker = async () => {
 const workerText = `
 const runOrder = async candidates => {
     await waitUntilStartTime()
-    await sleep(Math.floor(Math.random() * 2000) + 1)
+    await sleep(Math.floor(Math.random() * 500) + 1)
     for (const c of candidates) {
         const result = await order(c)
         if (result) return 0
