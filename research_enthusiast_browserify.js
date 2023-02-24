@@ -1,11 +1,11 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.3.3-beta"
+const Version = "v1.5.0-beta"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
-const queryUrl = `https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&day=`
+const classifyUrl = "https://www.sekahui.com/wap/mendian_yuyue_quanbu.php?mendian_id=317340&fenlei="
 
 const _request = (url, method, data = null) => {
     const r = (resolve, reject) => {
@@ -33,11 +33,11 @@ const getTimestampMs = date => Date.parse(`${date || user.date} 00:00:00`)
 
 const getTimestamp = date => getTimestampMs(date) / 1000
 
-const getQueryUrl = date => queryUrl + getTimestamp(date)
+const getQueryUrl = (classify, date) => classifyUrl + encodeURIComponent(classify) + "&day=" + getTimestamp(date)
 
-const getHtml = async date => {
+const getHtml = async url => {
     try {
-        const {body} = await get(getQueryUrl(date));
+        const {body} = await get(url);
         return body
     } catch (e) {
         console.log("get html failed")
@@ -45,14 +45,18 @@ const getHtml = async date => {
     }
 }
 
-const domFromNetWork = async () => {
-    const html = await getHtml()
+const domFromNetWork = async url => {
+    const html = await getHtml(url)
     return new DOMParser().parseFromString(html, "text/html")
 }
 
 const parseNodes = async () => {
+    const classify = ["细胞培养平台", "大型精密仪器平台", "办公区", "1"]
+    return await Promise.all(classify.map(c => _parseNodes(getQueryUrl(c))))
+}
+const _parseNodes = async url => {
     console.log("parsing data ...")
-    const _document = await domFromNetWork()
+    const _document = await domFromNetWork(url)
     const formDl = getFormData(_document)
     const labelNodes = _document.querySelector("#frm > div.box > div > table:nth-child(1) > tbody > tr")
     const labels = [...labelNodes.getElementsByTagName("td")].map(n => n.textContent.trim())
@@ -162,7 +166,7 @@ const buildFormByList = dl => {
     dl.forEach(d => {
         let [name, value] = d
         value = name === "create_time" ? normalizeCreatedTime(value) : value
-        name === "create_time" && console.log("[debug] create_time",value)
+        name === "create_time" && console.log("[debug] create_time", value)
         formData.append(name, value)
     })
     formData.append("beizhu", "")
@@ -173,23 +177,27 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const normalizeCreatedTime = t => {
     const remain = getTimestamp() - day - parseInt(t)
-    return remain >= 0 ? `${getTimestamp() - day + getRndInteger(0,2)}` : t
+    return remain >= 0 ? `${getTimestamp() - day + getRndInteger(0, 2)}` : t
 }
 
 function getRndInteger(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) ) + min;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 const run = async () => {
     tip(user)
-    const {formDl, options} = await parseNodes()
-    const candidates = choose(options)
-    for (const c of candidates) {
-        const payload = buildFormByList(formDl.concat(c))
-        await waitUntilStartTime()
-        await sleep(Math.floor(Math.random() * 500) + 1)
-        const result = await order(payload)
-        if (result) return 0
+    for(const {formDl, options} of await parseNodes()){
+        try {
+            const candidates = choose(options)
+            for (const c of candidates) {
+                const payload = buildFormByList(formDl.concat(c))
+                await waitUntilStartTime()
+                await sleep(Math.floor(Math.random() * 500) + 1)
+                const result = await order(payload)
+                if (result) return 0
+            }
+        }catch (e){}
+
     }
     throw "all tasks failed"
 }
@@ -298,11 +306,18 @@ const createWorker = () => {
 
 const runOnWorker = async () => {
     tip(user)
-    const {formDl, options} = await parseNodes()
-    const candidates = choose(options).map(c => [...buildFormByList(formDl.concat(c)).entries()])
-    if (!candidates?.length){
+    let candidates = [];
+    for (const {formDl, options} of await parseNodes()){
+        try {
+            candidates = choose(options).map(c => [...buildFormByList(formDl.concat(c)).entries()])
+            if (candidates?.length)break
+        }catch (e){}
+    }
+
+    if (!candidates?.length) {
         throw "config error,no plan found"
     }
+
     stopWorkerTimer()
     const wk = createWorker()
     user.worker = wk
@@ -450,9 +465,16 @@ const modifyOrder = async cfg => {
     configUser(cfg)
     tip(user)
     user.date = getAvailableDay()
-    const {formDl, options} = await parseNodes()
-    const [candidate] = choose(options).filter(r => r)
+    let candidate = null;
+    for ({formDl, options} of await parseNodes()){
+        try {
+            const [cd] = choose(options).filter(r => r)
+            candidate = cd
+            if (candidate)break
+        }catch (e){}
+    }
     if (!candidate) throw `build form error,user ${user}`
+
     user.date = cfg.date
     const payload = buildFormByList(formDl.concat(candidate))
     payload.set("create_time", `${Math.floor(Date.now() / 1000)}`)
