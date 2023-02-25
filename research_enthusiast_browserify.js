@@ -1,7 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.5.0-beta"
+const Version = "v1.5.1"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -55,7 +55,7 @@ const parseNodes = async () => {
     return await Promise.all(classify.map(c => _parseNodes(getQueryUrl(c))))
 }
 const _parseNodes = async url => {
-    console.log("parsing data ...")
+    console.log("parsing data ... "+ url)
     const _document = await domFromNetWork(url)
     const formDl = getFormData(_document)
     const labelNodes = _document.querySelector("#frm > div.box > div > table:nth-child(1) > tbody > tr")
@@ -76,7 +76,7 @@ const _parseNodes = async url => {
             options[key].push(o)
         })
     )
-    user.labels = labels
+    user.labels = (user?.labels?? []).concat(labels)
     return {formDl, options}
 }
 
@@ -308,6 +308,7 @@ const runOnWorker = async () => {
     tip(user)
     let candidates = [];
     for (const {formDl, options} of await parseNodes()){
+        console.log(formDl,options)
         try {
             candidates = choose(options).map(c => [...buildFormByList(formDl.concat(c)).entries()])
             if (candidates?.length)break
