@@ -1,7 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.5.1"
+const Version = "v1.5.2"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -126,6 +126,7 @@ const waitUntilStartTime = date => {
 }
 
 const waitUntil = async timestamp => {
+    await checkCookie(timestamp)
     let remain = timestamp - Date.now()
     if (remain <= 0) return
     console.log(`call function stopTimer to cancel`)
@@ -318,7 +319,6 @@ const runOnWorker = async () => {
     if (!candidates?.length) {
         throw "config error,no plan found"
     }
-
     stopWorkerTimer()
     const wk = createWorker()
     user.worker = wk
@@ -400,6 +400,7 @@ const waitUntilStartTime = date => {
 }
 
 const waitUntil = async timestamp => {
+    await checkCookie(timestamp)
     let remain = timestamp - Date.now()
     if (remain <= 0) return
     console.log("call function stopTimer to cancel")
@@ -533,5 +534,14 @@ const onload = () => console.log(
 );
 
 const feature = () => console.log("1. fix created time")
+
+const checkCookie = async runtime => {
+    const c = await cookieStore.get("PHPSESSID")
+    console.log(`cookie will expire at ${new Date(c.expires)}`)
+    if (!c || runtime > c.expires){
+        console.log(`run at ${new Date(runtime)}`)
+        throw "try login again https://www.sekahui.com/wap/mendian_wuquan.php?mendian=0"
+    }
+}
 
 onload()
