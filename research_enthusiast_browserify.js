@@ -335,6 +335,14 @@ const runOrder = async candidates => {
     }
     throw "all tasks failed"
 }
+const checkCookie = async runtime => {
+    const c = await cookieStore.get("PHPSESSID")
+    console.log("cookie will expire at "+new Date(c.expires).toString())
+    if (!c || runtime > c.expires){
+        console.log("run at "+new Date(runtime).toString())
+        throw "try login again https://www.sekahui.com/wap/mendian_wuquan.php?mendian=0"
+    }
+}
 
 const order = async payload => {
     const start = new Date()
