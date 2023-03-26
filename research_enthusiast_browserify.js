@@ -1,7 +1,7 @@
 const user = {}
 const day = 60 * 60 * 24
 const ProjectName = "🔬Research enthusiast"
-const Version = "v1.5.2"
+const Version = "v1.5.3"
 const host = "https://www.sekahui.com"
 const ordersLink = "https://www.sekahui.com/wap/my_room_yuyue_dian_quanbu.php?r=317340"
 const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianhao=317340"
@@ -320,6 +320,8 @@ const runOnWorker = async () => {
         throw "config error,no plan found"
     }
     stopWorkerTimer()
+    const ms = getTimestampMs()
+    await checkCookie(ms - (day * 1000))
     const wk = createWorker()
     user.worker = wk
     wk.postMessage(JSON.stringify({candidates, user}))
@@ -334,14 +336,6 @@ const runOrder = async candidates => {
         if (result) return 0
     }
     throw "all tasks failed"
-}
-const checkCookie = async runtime => {
-    const c = await cookieStore.get("PHPSESSID")
-    console.log("cookie will expire at "+new Date(c.expires).toString())
-    if (!c || runtime > c.expires){
-        console.log("run at "+new Date(runtime).toString())
-        throw "try login again https://www.sekahui.com/wap/mendian_wuquan.php?mendian=0"
-    }
 }
 
 const order = async payload => {
@@ -408,7 +402,6 @@ const waitUntilStartTime = date => {
 }
 
 const waitUntil = async timestamp => {
-    await checkCookie(timestamp)
     let remain = timestamp - Date.now()
     if (remain <= 0) return
     console.log("call function stopTimer to cancel")
