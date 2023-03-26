@@ -10,6 +10,8 @@ const config = {
 promise.then(
     response => response.text()
 ).then(
-    code => $.globalEval(code) || runWithConfigOnWorker(config)
+    code => $.globalEval(code)
+).then(
+    _ => runWithConfigOnWorker(config)
 )
 
