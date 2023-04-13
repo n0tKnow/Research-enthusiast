@@ -152,7 +152,7 @@ const getSleepTime = remain => {
     return remain > (minute + 25 * second) ? minute : remain > minWait ? minWait : (remain + second / 10)
 }
 
-const stopTimer = () => {
+function stopTimer(){
     user.stop = true
     stopWorkerTimer()
 }
@@ -462,7 +462,7 @@ function runWithConfigOnWorker (config) {
     return runOnWorker()
 }
 
-const modifyOrder = async cfg => {
+async function modifyOrder (cfg) {
     formatConfig(cfg)
     const currentOrder = await findOrderByConfig(cfg)
     configUser(cfg)
