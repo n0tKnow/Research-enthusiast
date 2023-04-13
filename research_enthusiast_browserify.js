@@ -457,7 +457,7 @@ const postUrl = "https://www.sekahui.com/wap/room_yuyue_quanbu.php?mendianbianha
 
 const user = {}`
 
-const runWithConfigOnWorker = config => {
+function runWithConfigOnWorker (config) {
     configUser(config)
     return runOnWorker()
 }
